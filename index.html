@@ -1,25 +1,697 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EOS Pad</title>
+    <title>Puneet Mishra | You-i</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://unpkg.com/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.fog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
-        /* Basic styles to prevent flickering and set the initial background */
-        body, html {
-            margin: 0;
-            padding: 0;
+        :root {
+            --canvas-bg: #f0f2f5;
+            --text-color: #5b6478;
+            --heading-color: #3a4151;
+            --glass-bg: rgba(255, 255, 255, 0.25);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --shadow-dark: rgba(163, 177, 198, 0.15);
+            --shadow-light: rgba(255, 255, 255, 0.5);
+            --cursor-color: #3a4151;
+        }
+
+        :root.dark {
+            --canvas-bg: #1a202c;
+            --text-color: #a0aec0;
+            --heading-color: #e2e8f0;
+            --glass-bg: rgba(45, 55, 72, 0.2);
+            --glass-border: rgba(255, 255, 255, 0.07);
+            --shadow-dark: rgba(0, 0, 0, 0.25);
+            --shadow-light: rgba(255, 255, 255, 0.05);
+            --cursor-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--canvas-bg);
+            color: var(--text-color);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            cursor: none;
+            overflow-x: hidden;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+            color: var(--heading-color);
+            transition: color 0.5s ease;
+        }
+        
+        #vanta-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+        }
+
+        .formation {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                inset 0 1px 1px 0 var(--shadow-light),
+                0 8px 32px 0 var(--shadow-dark);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            opacity: 0;
+            transform: scale(0.95);
+            transform-style: preserve-3d;
+            will-change: transform;
+            animation: breathe 6s ease-in-out infinite alternate;
+        }
+        @keyframes breathe {
+            from {
+                box-shadow: inset 0 1px 1px 0 var(--shadow-light), 0 8px 32px 0 var(--shadow-dark);
+            }
+            to {
+                box-shadow: inset 0 1px 1px 0 var(--shadow-light), 0 12px 40px 2px var(--shadow-dark), 0 0 10px var(--glass-border);
+            }
+        }
+
+        .pebble {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                inset 0 1px 1px 0 var(--shadow-light),
+                0 4px 15px 0 var(--shadow-dark);
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            cursor: none;
+        }
+        .pebble:hover {
+            box-shadow: 
+                inset 0 1px 1px 0 var(--shadow-light),
+                0 2px 8px var(--shadow-dark);
+            transform: translateY(-2px);
+        }
+        
+        #cursor-dot {
+            position: fixed; width: 8px; height: 8px; background-color: var(--cursor-color);
+            border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
+            z-index: 9999; transition: transform 0.1s ease-out, background-color 0.5s ease;
+        }
+        #cursor-ring {
+            position: fixed; width: 40px; height: 40px; border: 1px solid var(--cursor-color);
+            border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
+            z-index: 9999; transition: transform 0.2s ease-out, opacity 0.3s ease-out, border-color 0.5s ease, width 0.3s ease, height 0.3s ease;
+        }
+        .pebble:hover ~ #cursor-ring, .formation:hover ~ #cursor-ring { transform: translate(-50%, -50%) scale(1.5); opacity: 0.2; }
+        
+        #kbar-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 15vh;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+        }
+        #kbar {
+            width: 100%;
+            max-width: 600px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
             overflow: hidden;
-            background-color: #01020D; /* Default dark theme background of EosPad */
+        }
+        #kbar-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--heading-color);
+        }
+        #kbar-input:focus { outline: none; }
+        .kbar-item {
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            color: var(--text-color);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .kbar-item:hover, .kbar-item.active {
+            background: rgba(255,255,255,0.1);
+            color: var(--heading-color);
+        }
+        #game-canvas {
+            width: 100%;
+            height: 400px;
+            border-radius: 1rem;
+            touch-action: none; 
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
         }
     </style>
 </head>
-<body>
-    <!-- This container is where the EosPad editor will be loaded by the script -->
- <div id="eospad-container"></div>
+<body class="antialiased opacity-0 transition-opacity duration-500">
 
-    <!-- Load the EosPad script -->
-    <script src="eospad.js"></script>
-    
+    <div id="vanta-bg"></div>
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
+
+    <header class="fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold tracking-wider magnetic" data-note="C4">PM</a>
+            <div class="flex items-center space-x-2">
+                <nav class="hidden md:flex space-x-2 text-sm font-medium">
+                    <a href="#about" class="pebble px-5 py-3 magnetic" data-note="C5">About</a>
+                    <a href="#skills" class="pebble px-5 py-3 magnetic" data-note="D5">Skills</a>
+                    <a href="#projects" class="pebble px-5 py-3 magnetic" data-note="E5">Projects</a>
+                    <a href="#contact" class="pebble px-5 py-3 magnetic" data-note="F5">Contact</a>
+                </nav>
+                <button id="theme-toggle" class="pebble p-3 magnetic" data-note="G5" aria-label="Toggle color theme">
+                    <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 pt-32">
+        <section id="hero" class="min-h-[80vh] flex flex-col justify-center items-center text-center">
+            <div class="formation p-8 md:p-16" data-tilt>
+                <div class="flex justify-center items-center gap-4 mb-4">
+                    <img id="avatar-img-hero" src="https://placehold.co/80x80/e0e5ec/555?text=PM" alt="Puneet Mishra" class="w-20 h-20 rounded-full">
+                    <div id="live-status-container" class="text-left">
+                         <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight">Puneet Mishra</h1>
+                         <div id="live-status" class="flex items-center gap-2 mt-1">
+                             <span class="relative flex h-3 w-3">
+                               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                               <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
+                             </span>
+                             <span class="text-sm opacity-80">Connecting...</span>
+                         </div>
+                    </div>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-semibold tracking-widest mt-2">Pyouneetm</h2>
+                <p id="hero-bio" class="mt-8 text-lg md:text-xl max-w-2xl">Loading bio...</p>
+                <a href="#projects" class="mt-10 inline-block px-8 py-4 pebble font-semibold magnetic" data-note="G4">View My Work</a>
+            </div>
+        </section>
+
+        <section id="about" class="py-24 md:py-40">
+             <div class="formation p-8 md:p-12 text-center max-w-4xl mx-auto" data-tilt>
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">About Me</h2>
+                <p id="about-text" class="leading-relaxed max-w-3xl mx-auto">Loading details...</p>
+                <div id="github-stats" class="mt-10 flex justify-center gap-8 md:gap-16"></div>
+                <div id="spotify-container" class="mt-10 pebble p-4 max-w-sm mx-auto hidden">
+                    <a id="spotify-link" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center gap-4">
+                        <img id="spotify-album-art" src="https://placehold.co/64x64/e0e5ec/555?text=S" class="w-16 h-16 rounded-md" alt="Spotify album art">
+                        <div class="text-left">
+                            <p class="text-sm opacity-70">Now Playing</p>
+                            <p id="spotify-track" class="font-bold">Loading...</p>
+                            <p id="spotify-artist" class="text-sm opacity-80">...</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="skills" class="py-24 md:py-40">
+            <div class="text-center max-w-5xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-bold mb-16">Technical Skills</h2>
+                <div id="skills-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8"></div>
+            </div>
+        </section>
+
+        <section id="projects" class="py-24 md:py-40">
+            <div class="text-center max-w-6xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-bold mb-16">Featured Projects</h2>
+                <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"></div>
+            </div>
+        </section>
+
+        <section id="game" class="py-24 md:py-40">
+            <div class="formation p-8 md:p-12 max-w-4xl mx-auto text-center" data-tilt>
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">Cosmic Dodge</h2>
+                <p class="max-w-xl mx-auto mb-8">Move your mouse or finger to guide the comet. Click or tap to restart.</p>
+                <canvas id="game-canvas"></canvas>
+            </div>
+        </section>
+
+        <section id="contact" class="py-24 md:py-40 text-center">
+             <div class="formation p-8 md:p-12 max-w-3xl mx-auto" data-tilt>
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">Get In Touch</h2>
+                <p class="max-w-xl mx-auto mb-10">Open to new ideas. Press <kbd class="px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">P</kbd> + <kbd class="px-2 py-1.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">M</kbd> to start.</p>
+                <div id="social-links" class="flex justify-center gap-4 flex-wrap"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="mt-16">
+        <div class="container mx-auto px-6 py-6 text-center text-sm opacity-60">
+            &copy; <span id="year"></span> Puneet Mishra. All Rights Reserved.
+        </div>
+    </footer>
+
+    <div id="kbar-container">
+        <div id="kbar">
+            <input type="text" id="kbar-input" placeholder="Type a command or search...">
+            <div id="kbar-results"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const GITHUB_USERNAME = 'Pyouneetm';
+            const LANYARD_USER_ID = '742458064923459675';
+
+            let audioInitialized = false;
+            let synth, hoverSynth;
+            
+            function initAudio() {
+                if (audioInitialized) return;
+                Tone.start();
+                const masterVolume = new Tone.Volume(-18).toDestination();
+
+                const reverb = new Tone.Reverb({
+                    decay: 4,
+                    preDelay: 0.01,
+                    wet: 0.6
+                }).connect(masterVolume);
+
+                synth = new Tone.PolySynth(Tone.FMSynth, {
+                    harmonicity: 3.01,
+                    modulationIndex: 14,
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 1.5 },
+                    modulation: { type: "sine" },
+                    modulationEnvelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 1 }
+                }).connect(reverb);
+
+                hoverSynth = new Tone.MonoSynth({
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.8 },
+                    filter: { type: "lowpass", frequency: 600, Q: 1 },
+                    filterEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1, baseFrequency: 200, octaves: 4 }
+                }).connect(reverb);
+                
+                audioInitialized = true;
+            }
+            document.body.addEventListener('mousedown', initAudio, { once: true });
+            document.body.addEventListener('touchstart', initAudio, { once: true });
+
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const root = document.documentElement;
+            let vantaEffect = null;
+
+            const setTheme = (theme) => {
+                root.classList.toggle('dark', theme === 'dark');
+                document.getElementById('theme-toggle-light-icon').classList.toggle('hidden', theme === 'dark');
+                document.getElementById('theme-toggle-dark-icon').classList.toggle('hidden', theme !== 'dark');
+                localStorage.setItem('theme', theme);
+                updateVantaTheme(theme);
+            };
+
+            function updateVantaTheme(theme) {
+                if (vantaEffect) vantaEffect.destroy();
+                const hour = new Date().getHours();
+                let highlightColor, midtoneColor, lowlightColor;
+                if (hour > 6 && hour < 18) {
+                    highlightColor = theme === 'dark' ? 0x3a4a68 : 0xd1e0ff; midtoneColor = theme === 'dark' ? 0x8a3b59 : 0xffa7a7; lowlightColor = theme === 'dark' ? 0x1a202c : 0xffe6ab;
+                } else {
+                    highlightColor = theme === 'dark' ? 0x2c3e50 : 0x5c677d; midtoneColor = theme === 'dark' ? 0x4a5568 : 0x82aaff; lowlightColor = theme === 'dark' ? 0x1a202c : 0x1b2a47;
+                }
+                vantaEffect = VANTA.FOG({ el: "#vanta-bg", mouseControls: true, touchControls: true, gyroControls: false, highlightColor, midtoneColor, lowlightColor, baseColor: theme === 'dark' ? 0x1a202c : 0xf0f2f5, blurFactor: 0.6, speed: 1.2, zoom: 0.8 });
+            }
+
+            const preferredTheme = localStorage.getItem('theme') || 'light';
+            setTheme(preferredTheme);
+            themeToggleBtn.addEventListener('click', () => { setTheme(root.classList.contains('dark') ? 'light' : 'dark'); if (audioInitialized) synth.triggerAttackRelease("C5", "8n"); });
+
+            const cursorDot = document.getElementById('cursor-dot');
+            const cursorRing = document.getElementById('cursor-ring');
+            gsap.set(cursorDot, { xPercent: -50, yPercent: -50 });
+            gsap.set(cursorRing, { xPercent: -50, yPercent: -50 });
+            window.addEventListener('mousemove', e => {
+                gsap.to(cursorDot, { duration: 0.2, x: e.clientX, y: e.clientY });
+                gsap.to(cursorRing, { duration: 0.4, x: e.clientX, y: e.clientY });
+            });
+
+            function initInteractiveElements() {
+                document.querySelectorAll('.magnetic').forEach(el => {
+                    const xTo = gsap.quickTo(el, "x", { duration: 1, ease: "elastic.out(1, 0.3)" });
+                    const yTo = gsap.quickTo(el, "y", { duration: 1, ease: "elastic.out(1, 0.3)" });
+                    el.addEventListener("mouseenter", () => { const note = el.dataset.note || "C6"; if(audioInitialized) hoverSynth.triggerAttackRelease(note, "32n"); });
+                    el.addEventListener("mousemove", e => { const { clientX, clientY } = e; const { height, width, left, top } = el.getBoundingClientRect(); const x = clientX - (left + width / 2); const y = clientY - (top + height / 2); xTo(x * 0.4); yTo(y * 0.4); });
+                    el.addEventListener("mouseleave", () => { xTo(0); yTo(0); });
+                });
+            }
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            function animateIn() {
+                gsap.utils.toArray('.formation').forEach((el) => {
+                    gsap.fromTo(el, { opacity: 0, y: 30, scale: 0.98 }, {
+                        opacity: 1, y: 0, scale: 1, duration: 1, ease: 'expo.out',
+                        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none', onEnter: () => { if(audioInitialized) synth.triggerAttackRelease("C4", "8n", Tone.now(), 0.8); }}
+                    });
+                });
+            }
+
+            function initTiltEffect() {
+                document.querySelectorAll('[data-tilt]').forEach(el => {
+                    el.addEventListener('mousemove', (e) => { const { left, top, width, height } = el.getBoundingClientRect(); const x = (e.clientX - left) / width - 0.5; const y = (e.clientY - top) / height - 0.5; gsap.to(el, { duration: 0.5, rotationY: x * 8, rotationX: -y * 8, transformPerspective: 1000, ease: 'power1.out' }); });
+                    el.addEventListener('mouseleave', () => { gsap.to(el, { duration: 1, rotationY: 0, rotationX: 0, ease: 'elastic.out(1, 0.5)' }); });
+                });
+            }
+            
+            async function fetchData() {
+                try {
+                    const [userRes, reposRes] = await Promise.all([ fetch(`https://api.github.com/users/${GITHUB_USERNAME}`), fetch(`https://api.github.com/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`) ]);
+                    if (!userRes.ok || !reposRes.ok) throw new Error('Failed to fetch data');
+                    const user = await userRes.json();
+                    const allRepos = await reposRes.json();
+                    populateUI(user, allRepos);
+                    animateIn();
+                    initTiltEffect();
+                    initInteractiveElements();
+                    initGame();
+                } catch (error) { console.error("Error fetching data:", error); }
+            }
+
+            function populateUI(user, allRepos) {
+                if (user.avatar_url) document.getElementById('avatar-img-hero').src = user.avatar_url;
+                document.getElementById('hero-bio').textContent = user.bio || 'A passionate developer exploring the web.';
+                document.getElementById('about-text').textContent = `Based in ${user.location || 'the digital cosmos'}, I have ${user.public_repos} public repositories. With ${user.followers} followers, I enjoy contributing to open-source and collaborating on innovative projects.`;
+                document.getElementById('github-stats').innerHTML = `<div class="text-center"><h4 class="text-4xl font-bold">${user.public_repos||0}</h4><p class="text-sm opacity-70">Repositories</p></div><div class="text-center"><h4 class="text-4xl font-bold">${user.followers||0}</h4><p class="text-sm opacity-70">Followers</p></div>`;
+                const baseSkills = ['JavaScript', 'React', 'Node.js', 'Python', 'Three.js', 'GLSL', 'TailwindCSS', 'Docker', 'Git', 'Firebase', 'MongoDB', 'GraphQL'];
+                const languageCounts = allRepos.reduce((acc, repo) => { if (repo.language) acc[repo.language] = (acc[repo.language] || 0) + 1; return acc; }, {});
+                const combinedSkills = [...new Set([...baseSkills, ...Object.keys(languageCounts)])];
+                document.getElementById('skills-grid').innerHTML = combinedSkills.map(skill => `<div class="pebble p-4 text-center"><p class="font-semibold">${skill}</p></div>`).join('');
+                const featuredRepos = allRepos.filter(repo => !repo.fork).slice(0, 6);
+                document.getElementById('projects-grid').innerHTML = featuredRepos.map(repo => `<a href="${repo.html_url}" target="_blank" rel="noopener noreferrer" class="formation p-6 text-left flex flex-col" data-tilt><h3 class="font-bold text-lg mb-2">${repo.name.replace(/-/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</h3><p class="text-sm flex-grow opacity-80">${repo.description||'No description.'}</p><div class="mt-4 flex justify-between items-center text-xs opacity-60"><span>⭐ ${repo.stargazers_count}</span><span>${repo.language||''}</span></div></a>`).join('');
+                document.getElementById('social-links').innerHTML = `<a href="${user.html_url}" target="_blank" rel="noopener noreferrer" class="pebble p-3 magnetic" data-note="A5"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/github.svg" class="w-6 h-6" alt="GitHub Profile"></a><a href="https://www.instagram.com/pyouneetm" target="_blank" rel="noopener noreferrer" class="pebble p-3 magnetic" data-note="B5"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" class="w-6 h-6" alt="Instagram Profile"></a><a href="https://www.linkedin.com/in/pyouneetm" target="_blank" rel="noopener noreferrer" class="pebble p-3 magnetic" data-note="C6"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/linkedin.svg" class="w-6 h-6" alt="LinkedIn Profile"></a><a href="https://www.youtube.com/@pyouneetm" target="_blank" rel="noopener noreferrer" class="pebble p-3 magnetic" data-note="D6"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/youtube.svg" class="w-6 h-6" alt="YouTube Channel"></a><a href="https://www.reddit.com/user/pyouneetm" target="_blank" rel="noopener noreferrer" class="pebble p-3 magnetic" data-note="E6"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/reddit.svg" class="w-6 h-6" alt="Reddit Profile"></a><a href="https://twitter.com/pyouneetm" target="_blank" rel="noopener noreferrer" class="pebble p-3 magnetic" data-note="F6"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/x.svg" class="w-6 h-6" alt="X (formerly Twitter) Profile"></a>`;
+            }
+
+            function updateLiveStatus(statusText, statusColor, isPinging = false) {
+                const liveStatusEl = document.getElementById('live-status');
+                if (!liveStatusEl) return;
+
+                const pingElement = isPinging ? `<span class="absolute inline-flex h-full w-full rounded-full ${statusColor} opacity-75 animate-ping"></span>` : '';
+
+                liveStatusEl.innerHTML = `
+                    <span class="relative flex h-3 w-3">
+                        ${pingElement}
+                        <span class="relative inline-flex rounded-full h-3 w-3 ${statusColor}"></span>
+                    </span>
+                    <span class="text-sm opacity-80">${statusText}</span>`;
+            }
+
+            function updatePresence(data) {
+                if (!data) {
+                    updateLiveStatus('Offline', 'bg-gray-500');
+                    return;
+                }
+                const discordStatus = data.discord_status || 'offline';
+                const statusMap = { online: 'bg-green-500', idle: 'bg-yellow-500', dnd: 'bg-red-500', offline: 'bg-gray-500' };
+                const statusColor = statusMap[discordStatus] || 'bg-gray-500';
+                const statusText = discordStatus.charAt(0).toUpperCase() + discordStatus.slice(1);
+                const isPinging = discordStatus !== 'offline';
+
+                updateLiveStatus(statusText, statusColor, isPinging);
+
+                const spotifyContainer = document.getElementById('spotify-container');
+                if (data.spotify) {
+                    spotifyContainer.classList.remove('hidden');
+                    document.getElementById('spotify-track').textContent = data.spotify.song;
+                    document.getElementById('spotify-artist').textContent = data.spotify.artist;
+                    document.getElementById('spotify-album-art').src = data.spotify.album_art_url;
+                    document.getElementById('spotify-link').href = `https://open.spotify.com/track/${data.spotify.track_id}`;
+                } else {
+                    spotifyContainer.classList.add('hidden');
+                }
+            }
+            
+            function connectLanyard() {
+                const setOffline = () => updateLiveStatus('Offline', 'bg-gray-500');
+                const connectionTimeout = setTimeout(setOffline, 7000);
+
+                const ws = new WebSocket(`wss://api.lanyard.rest/socket`);
+
+                ws.onopen = () => {
+                    ws.send(JSON.stringify({ op: 2, d: { subscribe_to_id: LANYARD_USER_ID } }));
+                };
+
+                const heartbeatInterval = setInterval(() => {
+                    if (ws.readyState === 1) {
+                        ws.send(JSON.stringify({ op: 3 }));
+                    }
+                }, 30000);
+
+                ws.onmessage = event => {
+                    clearTimeout(connectionTimeout);
+                    const { t, d } = JSON.parse(event.data);
+                    if (t === 'INIT_STATE' || t === 'PRESENCE_UPDATE') {
+                        const presenceData = d[LANYARD_USER_ID] || d;
+                        updatePresence(presenceData);
+                    }
+                };
+
+                ws.onerror = () => {
+                    clearTimeout(connectionTimeout);
+                    clearInterval(heartbeatInterval);
+                    setOffline();
+                };
+
+                ws.onclose = () => {
+                    clearTimeout(connectionTimeout);
+                    clearInterval(heartbeatInterval);
+                    setOffline();
+                };
+            }
+
+            const kbarContainer = document.getElementById('kbar-container');
+            const kbarInput = document.getElementById('kbar-input');
+            const kbarResults = document.getElementById('kbar-results');
+            const actions = [ { id: 'home', name: 'Home', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) }, { id: 'about', name: 'About', action: () => document.getElementById('about').scrollIntoView({ behavior: 'smooth' }) }, { id: 'skills', name: 'Skills', action: () => document.getElementById('skills').scrollIntoView({ behavior: 'smooth' }) }, { id: 'projects', name: 'Projects', action: () => document.getElementById('projects').scrollIntoView({ behavior: 'smooth' }) }, { id: 'contact', name: 'Contact', action: () => document.getElementById('contact').scrollIntoView({ behavior: 'smooth' }) }, { id: 'theme', name: 'Toggle Theme', action: () => themeToggleBtn.click() }, { id: 'github', name: 'View Source (GitHub)', action: () => window.open('https://github.com/Pyouneetm', '_blank') }, ];
+            function renderResults(query = '') {
+                const filteredActions = actions.filter(a => a.name.toLowerCase().includes(query.toLowerCase()));
+                kbarResults.innerHTML = filteredActions.map((action, index) => `<button class="kbar-item ${index === 0 ? 'active' : ''}" data-action-id="${action.id}">${action.name}</button>`).join('');
+                document.querySelectorAll('.kbar-item').forEach(item => { item.addEventListener('click', () => { actions.find(a => a.id === item.dataset.actionId).action(); closeKbar(); }); });
+            }
+            function openKbar() { kbarContainer.style.display = 'flex'; kbarInput.focus(); renderResults(); if(audioInitialized) synth.triggerAttackRelease("C4", "8n"); }
+            function closeKbar() { kbarContainer.style.display = 'none'; kbarInput.value = ''; }
+            
+            let pKeyPressed = false;
+            window.addEventListener('keydown', (e) => {
+                if (document.activeElement === kbarInput) return;
+
+                const key = e.key.toLowerCase();
+                if (key === 'p') {
+                    pKeyPressed = true;
+                    setTimeout(() => { pKeyPressed = false; }, 1500);
+                } else if (key === 'm' && pKeyPressed) {
+                    e.preventDefault();
+                    kbarContainer.style.display === 'flex' ? closeKbar() : openKbar();
+                    pKeyPressed = false;
+                } else {
+                    pKeyPressed = false;
+                }
+
+                if (e.key === 'Escape' && kbarContainer.style.display === 'flex') {
+                    closeKbar();
+                }
+            });
+
+            kbarInput.addEventListener('input', () => renderResults(kbarInput.value));
+            kbarContainer.addEventListener('click', (e) => { if (e.target === kbarContainer) closeKbar(); });
+
+            // --- Game Logic ---
+            function initGame() {
+                const canvas = document.getElementById('game-canvas');
+                const ctx = canvas.getContext('2d');
+                let player, obstacles, score, gameOver, gameSpeed, obstacleSpawnTimer, particles, stars;
+
+                function resizeCanvas() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+
+                function createStars() {
+                    stars = [];
+                    for (let i = 0; i < 100; i++) {
+                        stars.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height,
+                            radius: Math.random() * 1.5,
+                            alpha: Math.random()
+                        });
+                    }
+                }
+
+                function resetGame() {
+                    player = { x: canvas.width / 2, y: canvas.height - 40, radius: 12, trail: [] };
+                    obstacles = [];
+                    particles = [];
+                    score = 0;
+                    gameOver = false;
+                    gameSpeed = 2;
+                    obstacleSpawnTimer = 0;
+                    createStars();
+                }
+
+                function handleMouseMove(e) { const rect = canvas.getBoundingClientRect(); player.x = e.clientX - rect.left; }
+                
+                function handleTouchMove(e) {
+                    if (e.touches.length > 0) {
+                        const rect = canvas.getBoundingClientRect();
+                        player.x = e.touches[0].clientX - rect.left;
+                    }
+                }
+                canvas.addEventListener('mousemove', handleMouseMove);
+                canvas.addEventListener('touchmove', handleTouchMove, { passive: true });
+
+
+                function createExplosion(x, y) {
+                    for (let i = 0; i < 50; i++) {
+                        particles.push({
+                            x, y,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            life: 60,
+                            radius: Math.random() * 3 + 1
+                        });
+                    }
+                }
+
+                function gameLoop() {
+                    const headingColor = getComputedStyle(root).getPropertyValue('--heading-color');
+                    const isDark = root.classList.contains('dark');
+                    ctx.fillStyle = isDark ? 'rgba(26, 32, 44, 0.5)' : 'rgba(240, 242, 245, 0.5)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    stars.forEach(star => {
+                        star.alpha += (Math.random() - 0.5) * 0.1;
+                        star.alpha = Math.max(0, Math.min(1, star.alpha));
+                        ctx.beginPath();
+                        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+                        ctx.fill();
+                    });
+
+                    if (gameOver) {
+                        ctx.fillStyle = headingColor;
+                        ctx.font = 'bold 30px Poppins';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 20);
+                        ctx.font = '20px Inter';
+                        ctx.fillText(`Score: ${Math.floor(score)}`, canvas.width / 2, canvas.height / 2 + 20);
+                    } else {
+                        obstacleSpawnTimer++;
+                        if (obstacleSpawnTimer > 80 / (gameSpeed / 1.5)) {
+                            const size = Math.random() * 20 + 15;
+                            obstacles.push({ 
+                                x: Math.random() * (canvas.width - size), 
+                                y: -size, 
+                                size: size,
+                                angle: 0,
+                                rotationSpeed: (Math.random() - 0.5) * 0.1
+                            });
+                            obstacleSpawnTimer = 0;
+                        }
+
+                        for (let i = obstacles.length - 1; i >= 0; i--) {
+                            const o = obstacles[i];
+                            o.y += gameSpeed;
+                            o.angle += o.rotationSpeed;
+                            
+                            ctx.save();
+                            ctx.translate(o.x + o.size / 2, o.y + o.size / 2);
+                            ctx.rotate(o.angle);
+                            const obstacleGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, o.size);
+                            obstacleGradient.addColorStop(0, isDark ? 'rgba(129, 140, 248, 0.8)' : 'rgba(99, 102, 241, 0.8)');
+                            obstacleGradient.addColorStop(1, 'transparent');
+                            ctx.fillStyle = obstacleGradient;
+                            ctx.fillRect(-o.size / 2, -o.size / 2, o.size, o.size);
+                            ctx.strokeStyle = isDark ? 'rgba(199, 210, 254, 0.8)' : 'rgba(67, 56, 202, 0.8)';
+                            ctx.strokeRect(-o.size / 2, -o.size / 2, o.size, o.size);
+                            ctx.restore();
+
+                            const dx = player.x - (o.x + o.size / 2);
+                            const dy = player.y - (o.y + o.size / 2);
+                            if (Math.sqrt(dx * dx + dy * dy) < player.radius + o.size / 2) {
+                                gameOver = true;
+                                createExplosion(player.x, player.y);
+                                if(audioInitialized) synth.triggerAttackRelease("C3", "4n");
+                            }
+
+                            if (o.y > canvas.height) { obstacles.splice(i, 1); score++; gameSpeed += 0.05; }
+                        }
+
+                        player.trail.push({ x: player.x, y: player.y, life: 20 });
+                        if (player.trail.length > 20) player.trail.shift();
+
+                        for (let i = player.trail.length - 1; i >= 0; i--) {
+                            const p = player.trail[i];
+                            p.life--;
+                            if (p.life <= 0) player.trail.splice(i, 1);
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, (p.life / 20) * player.radius * 0.5, 0, Math.PI * 2);
+                            ctx.fillStyle = isDark ? `rgba(224, 231, 255, ${p.life / 20 * 0.5})` : `rgba(79, 70, 229, ${p.life / 20 * 0.5})`;
+                            ctx.fill();
+                        }
+
+                        ctx.shadowColor = isDark ? '#a5b4fc' : '#4f46e5';
+                        ctx.shadowBlur = 20;
+                        const playerGradient = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, player.radius);
+                        playerGradient.addColorStop(0, isDark ? '#c7d2fe' : '#6366f1');
+                        playerGradient.addColorStop(1, 'transparent');
+                        ctx.fillStyle = playerGradient;
+                        ctx.beginPath();
+                        ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                        
+                        ctx.font = '16px Inter';
+                        ctx.textAlign = 'left';
+                        ctx.fillStyle = headingColor;
+                        ctx.fillText(`Score: ${Math.floor(score)}`, 15, 25);
+                    }
+
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        const p = particles[i];
+                        p.x += p.vx; p.y += p.vy; p.life--;
+                        if (p.life <= 0) particles.splice(i, 1);
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = isDark ? `rgba(199, 210, 254, ${p.life / 60})` : `rgba(99, 102, 241, ${p.life / 60})`;
+                        ctx.fill();
+                    }
+
+                    requestAnimationFrame(gameLoop);
+                }
+
+                canvas.addEventListener('click', () => { if (gameOver) { resetGame(); } });
+                resetGame();
+                gameLoop();
+            }
+
+            document.getElementById('year').textContent = new Date().getFullYear();
+            fetchData();
+            connectLanyard();
+            window.addEventListener('load', () => { document.body.classList.remove('opacity-0'); });
+        });
+    </script>
 </body>
 </html>
